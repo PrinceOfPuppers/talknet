@@ -4,11 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 
-
-
 void *incoming_conn_listener_thread(void *conn_void){
     Conn *c = (Conn *)conn_void;
-    puts("here");
+
     while(sock_to_in_buffer(c)){
 
         // TODO: deal with conjoined packets
@@ -58,8 +56,7 @@ int await_connections(Conn *listen_conn, Conn_pool *conn_pool){
         
         // TODO: handshake
 
-        client->out_buffer = "Hello Client , I have received your connection. And now I will assign a handler for you\n";
-        out_buffer_to_sock(client,strlen(client->out_buffer));
+        send_message(client,"Hello Client , I have received your connection. And now I will assign a handler for you\n");
 
         if( pthread_create(&client->thread_id , NULL , incoming_conn_listener_thread , (void *)client) < 0 ){
 			perror("could not create thread");

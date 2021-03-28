@@ -9,9 +9,10 @@
 
 void *outgoing_conn_listener_thread(void *conn_void){
     Conn *c = (Conn *)conn_void;
-    c->out_buffer = "test";
-    out_buffer_to_sock(c,strlen(c->out_buffer));
 
+    send_message(c,"this is a very lengthy test to see what happens for messages larger than 255 characters, will there be an overflow, who the heck knows but by golly i am going to find out once i am done rambling to fill space in this ungodly long string that i am currently typing out. ");
+    send_message(c,"test");
+    
     while(sock_to_in_buffer(c)){
 
         // TODO: deal with conjoined packets

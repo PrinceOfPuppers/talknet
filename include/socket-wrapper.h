@@ -3,9 +3,12 @@
 #include<arpa/inet.h>
 #include <pthread.h>
 
-#define IN_BUFF_SIZE 2000
-#define OUT_BUFF_SIZE 500
 
+#define OUT_BUFF_SIZE 500
+// header currently consists of: 2 bytes for message size
+#define HEADER_SIZE 2
+
+#define IN_BUFF_SIZE 498 // must be able to contain: OUT_BUFF_SIZE - HEADER_SIZE
 
 struct Conn{
     int sock_fd;
@@ -24,7 +27,7 @@ void init_conn(Conn *c);
 void disconnect(Conn *c);
 void free_conn_buffers(Conn *c);
 
-int out_buffer_to_sock(Conn *c,int len);
+int send_message(Conn *c, char *message);
 int sock_to_in_buffer(Conn *c);
 
 // TODO: temp function, stdout_mutex must be initalized
