@@ -13,7 +13,7 @@ void *outgoing_conn_listener_thread(void *conn_void){
     send_message(c,"this is a very lengthy test to see what happens for messages larger than 255 characters, will there be an overflow, who the heck knows but by golly i am going to find out once i am done rambling to fill space in this ungodly long string that i am currently typing out. ");
     send_message(c,"test");
     
-    while(sock_to_in_buffer(c)){
+    while(sock_to_in_buffer(c,0)){
 
         // TODO: deal with conjoined packets
         pthread_mutex_lock(&stdout_mutex);

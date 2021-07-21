@@ -3,7 +3,7 @@ CC = gcc
 SRC = src
 BUILD = build
 PROGRAM = main
-CFLAGS = -Wall
+CFLAGS = -Wall -lssl -lcrypto
 
 INC = -Iinclude #-Ilib/clog/include -Ilib/rpi-sense-hat-api/include
 LIB = -lpthread #-L ./lib -l:clog/lib/clog.a -l:rpi-sense-hat-api/lib/sense-api.a

@@ -75,13 +75,20 @@ int send_message(Conn *c, char *message){
     return 1;
 }
 
+//void perform_handshake(Conn *c, RSA *keypair, int is_client){
+//    if(is_client){
+//        send_message
+//    };
+//}
+
+
 void flush_socket_buffer(int fd, char *write_buffer, int buff_size){
     // must clear tcp buffer so next message can be read properly 
     while(recv(fd, write_buffer , buff_size, MSG_DONTWAIT) > 0){}
     write_buffer[0] = '\0';
 }
 
-int sock_to_in_buffer(Conn *c){
+int sock_to_in_buffer(Conn *c, int blocking){
 
     ssize_t recv_size = recv(c->sock_fd, c->in_buffer , HEADER_SIZE, 0);
 
@@ -100,7 +107,12 @@ int sock_to_in_buffer(Conn *c){
         return 1;
     }
 
-    recv_size = recv(c->sock_fd, c->in_buffer, len, MSG_DONTWAIT);
+    if(blocking){
+        recv_size = recv(c->sock_fd, c->in_buffer, len, MSG_WAITFORONE);
+    }else{
+        recv_size = recv(c->sock_fd, c->in_buffer, len, MSG_DONTWAIT);
+    }
+    
 
 	if( recv_size < 0)
 	{

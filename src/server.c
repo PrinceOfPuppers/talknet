@@ -7,7 +7,7 @@
 void *incoming_conn_listener_thread(void *conn_void){
     Conn *c = (Conn *)conn_void;
 
-    while(sock_to_in_buffer(c)){
+    while(sock_to_in_buffer(c,0)){
 
         // TODO: deal with conjoined packets
         pthread_mutex_lock(&stdout_mutex);

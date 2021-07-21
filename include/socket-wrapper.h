@@ -3,6 +3,8 @@
 #include<arpa/inet.h>
 #include <pthread.h>
 
+#include "rsa.h"
+
 
 #define OUT_BUFF_SIZE 500
 // header currently consists of: 2 bytes for message size
@@ -24,11 +26,13 @@ struct Conn{
 typedef struct Conn Conn;
 
 void init_conn(Conn *c);
+void perform_handshake(Conn *c,RSA *keypair,int is_client);
+
 void disconnect(Conn *c);
 void free_conn_buffers(Conn *c);
 
 int send_message(Conn *c, char *message);
-int sock_to_in_buffer(Conn *c);
+int sock_to_in_buffer(Conn *c, int blocking);
 
 // TODO: temp function, stdout_mutex must be initalized
 extern pthread_mutex_t stdout_mutex;
