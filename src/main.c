@@ -2,7 +2,7 @@
 #include "client.h"
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
 
 #include "helpers.h"
 #include "rsa.h"
@@ -40,13 +40,20 @@
 
 
 
+
 int main(int argc , char *argv[])
 {   
+    
     RSA *keypair = get_keypair("./build");
 
-    test();
+    char *public_key = get_public_key_str(keypair);
+    RSA *test_rsa = get_public_key_rsa(public_key);
+    public_key = get_public_key_str(test_rsa);
 
+    printf("%s",public_key);
+    free(public_key);
     exit(0);
+
     //Conn_pool conn_pool;
     //init_conn_pool(&conn_pool);
 //
@@ -69,5 +76,5 @@ int main(int argc , char *argv[])
     //    }
     //}
     //free_conn_pool(&conn_pool);
-
+    //return 0;
 }

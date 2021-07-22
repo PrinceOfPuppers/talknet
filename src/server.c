@@ -20,7 +20,7 @@ void *incoming_conn_listener_thread(void *conn_void){
     return NULL;
 }
 
-int await_connections(Conn *listen_conn, Conn_pool *conn_pool){
+int await_connections(Conn *listen_conn, Conn_pool *conn_pool, RSA* rsa){
 	
     listen_conn->sock_fd = socket(AF_INET , SOCK_STREAM , 0);
 
@@ -57,6 +57,7 @@ int await_connections(Conn *listen_conn, Conn_pool *conn_pool){
         // TODO: handshake
 
         send_message(client,"Hello Client , I have received your connection. And now I will assign a handler for you\n");
+        
 
         if( pthread_create(&client->thread_id , NULL , incoming_conn_listener_thread , (void *)client) < 0 ){
 			perror("could not create thread");

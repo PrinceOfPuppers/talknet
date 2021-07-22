@@ -31,12 +31,18 @@ int gen_keypair(char *publicPath, char *privatePath){
         goto cleanup;
     }
 
+    if (BN_set_word(e, RSA_F4) != 1)
+    {
+        success = 0;
+        goto cleanup;
+    }
 
     if(!RSA_generate_key_ex(r,KEYSIZE,e,NULL)){
         success = 0;
         goto cleanup;
     }
-    
+
+
     public_fp = BIO_new_file(publicPath, "w+");
     if(!PEM_write_bio_RSAPublicKey(public_fp, r)){
         success = 0;
@@ -68,7 +74,7 @@ RSA *get_keypair(char *path){
 
     sprintf(publicPath, "%s/%s",path,PUBLIC_KEY_NAME);
     sprintf(privatePath,"%s/%s",path,PRIVATE_KEY_NAME);
-
+    
     if( !(access( publicPath, F_OK ) == 0) | !(access( privatePath, F_OK ) == 0) ) {
 
         int status = mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -76,34 +82,52 @@ RSA *get_keypair(char *path){
         if( (status != 0) | (errno != EEXIST) ){
             //TODO: do somthing about fail case
         }
-
+        
         //TODO: do somthing about fail case
         gen_keypair(publicPath,privatePath);
 
     }
-
     FILE *public_FP = fopen(publicPath,"rt");
     RSA *rsa = PEM_read_RSAPublicKey(public_FP,NULL,NULL,NULL);
 
 
     FILE *private_FP = fopen(privatePath,"rt");
-    rsa = PEM_read_RSAPrivateKey(private_FP,rsa,NULL,NULL);
+    rsa = PEM_read_RSAPrivateKey(private_FP,&rsa,NULL,NULL);
 
 
-    close(public_FP);
-    close(private_FP);
+    fclose(public_FP);
+    fclose(private_FP);
     
     free(privatePath);
     free(publicPath);
     return rsa;
 }
 
-#define rsa_public_decrypt(rsa,src,dest) RSA_public_decrypt(RSA_size(rsa), src, dest, rsa, RSA_PKCS1_OAEP_PADDING)
-#define rsa_public_encrypt(rsa,src,dest) RSA_public_encrypt(RSA_size(rsa), src, dest, rsa, RSA_PKCS1_OAEP_PADDING)
+RSA *get_public_key_rsa(char *public_key){
+    
+    BIO *bio = BIO_new(BIO_s_mem());
+    BIO_puts(bio, public_key);
+    
+    RSA *rsa = PEM_read_bio_RSA_PUBKEY(bio, 0, 0, 0);
 
-#define rsa_private_decrypt(rsa,src,dest) RSA_private_decrypt(RSA_size(rsa), src, dest, rsa, RSA_PKCS1_OAEP_PADDING)
-#define rsa_private_encrypt(rsa,src,dest) RSA_private_encrypt(RSA_size(rsa), src, dest, rsa, RSA_PKCS1_OAEP_PADDING)
+    BIO_free_all(bio);
+    return rsa;
+}
 
+char *get_public_key_str(RSA *rsa){
+    
+    BIO *bio = BIO_new(BIO_s_mem());
 
+    PEM_write_bio_RSA_PUBKEY(bio, rsa);
 
+    int len = BIO_pending(bio);
+    char *key = malloc(sizeof(char)*(len + 1));
 
+    BIO_read(bio, key, len);
+    
+    key[len] = '\0';
+
+    BIO_free_all(bio);
+
+    return key;
+}

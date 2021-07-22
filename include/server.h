@@ -7,4 +7,4 @@
 
 #define AWAIT_CONN_QUEUE_LEN 3
 
-int await_connections(Conn *listen_conn, Conn_pool *conn_pool);
+int await_connections(Conn *listen_conn, Conn_pool *conn_pool, RSA *rsa);
