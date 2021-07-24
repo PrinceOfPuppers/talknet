@@ -5,11 +5,14 @@ BUILD = build
 PROGRAM = main
 CFLAGS = -Wall -lssl -lcrypto
 
-INC = -Iinclude #-Ilib/clog/include -Ilib/rpi-sense-hat-api/include
+INCDIRS = $(addprefix -I, $(dir $(wildcard include/*)))
+
+INC = -Iinclude $(INCDIRS) #-Ilib/clog/include -Ilib/rpi-sense-hat-api/include
 LIB = -lpthread #-L ./lib -l:clog/lib/clog.a -l:rpi-sense-hat-api/lib/sense-api.a
 
+INCDIRS = $(addprefix -I, $(dir $(wildcard include/*/)))
 
-FILES = $(wildcard $(SRC)/*.c)
+FILES = $(wildcard $(SRC)/*/*.c) $(wildcard $(SRC)/*.c) 
 
 # directories with makefiles which must be called
 SUBMAKE = #lib/clog lib/rpi-sense-hat-api

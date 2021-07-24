@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-void *outgoing_conn_listener_thread(void *conn_void){
-    Conn *c = (Conn *)conn_void;
+// runtime of server client connection from perspective of client
+void client_server_main(Conn *c){
 
     send_message(c,"this is a very lengthy test to see what happens for messages larger than 255 characters, will there be an overflow, who the heck knows but by golly i am going to find out once i am done rambling to fill space in this ungodly long string that i am currently typing out. ");
     send_message(c,"test");
@@ -21,7 +21,18 @@ void *outgoing_conn_listener_thread(void *conn_void){
         pthread_mutex_unlock(&stdout_mutex);
 
     }
-    
+
+}
+
+
+/////////////////////////////////////////
+// client connection establishing code //
+/////////////////////////////////////////
+void *outgoing_conn_listener_thread(void *conn_void){
+    Conn *c = (Conn *)conn_void;
+
+    client_server_main(c);
+
     puts("disconnecting socket");
     disconnect(c);
     return NULL;

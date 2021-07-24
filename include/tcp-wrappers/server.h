@@ -7,4 +7,4 @@
 
 #define AWAIT_CONN_QUEUE_LEN 3
 
-int await_connections(Conn *listen_conn, Conn_pool *conn_pool, RSA *rsa);
+int start_server(void (*server_client_main)(Conn *, void *), void *server_client_main_args);

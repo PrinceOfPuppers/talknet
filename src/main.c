@@ -1,12 +1,9 @@
-#include "server.h"
-#include "client.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "helpers.h"
-#include "rsa.h"
-#include "aes.h"
+#include "main.h"
 
 
 #define SERVER_DIR "build/servers"
@@ -39,42 +36,51 @@
 
 
 
+// runtime of server client connection from perspective of server
+void server_client_main(Conn *c, void *server_client_args){
+    printf("in server_client_main\n");
+    while(sock_to_in_buffer(c,0)){
 
+        // TODO: deal with conjoined packets
+        pthread_mutex_lock(&stdout_mutex);
+        printf("inbound: %s\n",c->in_buffer);
+        pthread_mutex_unlock(&stdout_mutex);
+
+    }
+}
 
 int main(int argc , char *argv[])
 {   
-    
     RSA *keypair = get_keypair("./build");
+//
+    //char *public_key = get_public_key_str(keypair);
+    //RSA *test_rsa = get_public_key_rsa(public_key);
+    //public_key = get_public_key_str(test_rsa);
+//
+    //printf("%s",public_key);
+    //free(public_key);
+    //exit(0);
+    printf("test\n");
 
-    char *public_key = get_public_key_str(keypair);
-    RSA *test_rsa = get_public_key_rsa(public_key);
-    public_key = get_public_key_str(test_rsa);
+    switch(atoi(argv[1])){
+        case(0):{ // server
 
-    printf("%s",public_key);
-    free(public_key);
-    exit(0);
+            Server_client_args server_client_args;
+            server_client_args.keypair = keypair;
+            start_server(server_client_main,&server_client_args);
 
-    //Conn_pool conn_pool;
-    //init_conn_pool(&conn_pool);
-//
-    //switch(atoi(argv[1])){
-    //    case(0):{ // server
-    //        Conn listen_conn;
-    //        init_conn(&listen_conn);
-    //
-    //        await_connections(&listen_conn,&conn_pool);
-//
-    //        free_conn_buffers(&listen_conn);
-    //        break;
-    //    }
-    //    case(1):{ // client
-    //        pthread_t listener_thread_id = connect_to_peer(&conn_pool,"127.0.0.1",LISTEN_PORT);
-//
-    //        pthread_join(listener_thread_id, NULL);
-//
-    //        break;
-    //    }
-    //}
-    //free_conn_pool(&conn_pool);
-    //return 0;
+            break;
+        }
+        case(1):{ // client
+            Conn_pool conn_pool;
+            init_conn_pool(&conn_pool);
+            pthread_t listener_thread_id = connect_to_peer(&conn_pool,"127.0.0.1",LISTEN_PORT);
+
+            pthread_join(listener_thread_id, NULL);
+            free_conn_pool(&conn_pool);
+            break;
+        }
+    }
+    
+    return 0;
 }
