@@ -9,34 +9,57 @@
 
 pthread_mutex_t stdout_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+socklen_t SOCKADDER_IN_LEN = sizeof(struct sockaddr_in);
+
 // simply initalizes conn with buffers
 void init_conn(Conn *c){
     // sock_fd is also used as an indicator if the connection is live and a thread is running
-    c->sock_fd = -1;
+    c->sock_fd = SOCK_FD_FREE;
     c->thread_id = 0;
     
     c->in_buffer = malloc(sizeof(char)*IN_BUFF_SIZE);
+    c->in_buffer[IN_BUFF_SIZE-1] = '\0';
     c->out_buffer = malloc(sizeof(char)*OUT_BUFF_SIZE);
+    c->in_buffer[OUT_BUFF_SIZE-1] = '\0';
 
     pthread_mutex_init(&c->disconnect_conn_mutex,NULL);
-
 }
 
-void disconnect(Conn *c){
-    pthread_mutex_lock(&c->disconnect_conn_mutex);
-    if (c->sock_fd != -1){
-        // TODO: send EOF
-        pthread_cancel(c->thread_id); // close listener thread
+int connect_conn(Conn *c, char *ip, int port){
 
+    c->sock_fd = socket(AF_INET , SOCK_STREAM , 0);
+
+	if (c->sock_fd == SOCK_FD_ERR){
+		puts("Could not create socket");
+        return 0;
+	}
+
+    c->net_info.sin_addr.s_addr = inet_addr(ip);
+	c->net_info.sin_family = AF_INET;
+	c->net_info.sin_port = htons( port );
+
+	//Connect to remote server
+	if (connect(c->sock_fd , (struct sockaddr *)&c->net_info , sizeof(c->net_info)) < 0){
+        puts("Unable to connect to server");
+        c->sock_fd = SOCK_FD_FREE;
+		return 0;
+	}
+    return 1;
+}
+
+// disconnectes socket if its connected, frees it if its reserved
+void disconnect_conn(Conn *c){
+    pthread_mutex_lock(&c->disconnect_conn_mutex);
+    if ( (c->sock_fd != SOCK_FD_FREE) & (c->sock_fd != SOCK_FD_RESERVED) ){
+        // TODO: send EOF
         close(c->sock_fd);
-        c->sock_fd = -1;
-        c->thread_id = 0;
     }
+    c->sock_fd = SOCK_FD_FREE;
     pthread_mutex_unlock(&c->disconnect_conn_mutex);
 }
 
 void free_conn_buffers(Conn *c){
-    disconnect(c);
+    disconnect_conn(c);
     
     free(c->in_buffer);
     c->in_buffer = NULL;
@@ -74,13 +97,6 @@ int send_message(Conn *c, char *message){
 	puts("Data Send\n");
     return 1;
 }
-
-//void perform_handshake(Conn *c, RSA *keypair, int is_client){
-//    if(is_client){
-//        send_message
-//    };
-//}
-
 
 void flush_socket_buffer(int fd, char *write_buffer, int buff_size){
     // must clear tcp buffer so next message can be read properly 
@@ -154,7 +170,10 @@ Conn *get_free_conn(Conn_pool *conn_pool){
     pthread_mutex_lock(&conn_pool->mutex);
     
     for (int i = 0; i < CONN_POOL_SIZE; i++){
-        if (conn_pool->pool[i].sock_fd==-1){
+        if (conn_pool->pool[i].sock_fd == SOCK_FD_FREE){
+
+            // indicates socket is disconnected but reserved
+            conn_pool->pool[i].sock_fd = SOCK_FD_RESERVED;
 
             pthread_mutex_unlock(&conn_pool->mutex);
             return &conn_pool->pool[i];
@@ -163,4 +182,58 @@ Conn *get_free_conn(Conn_pool *conn_pool){
 
     pthread_mutex_unlock(&conn_pool->mutex);
     return NULL;
+}
+
+
+
+
+///////////////
+// listeners //
+///////////////
+
+// setup conn as a listener
+int listen_conn(Conn *lc, int port){
+
+    lc->sock_fd = socket(AF_INET , SOCK_STREAM , 0);
+
+	if (lc->sock_fd == SOCK_FD_ERR){
+		printf("Could not create socket");
+        return 0;
+	}
+
+    //Prepare the sockaddr_in structure
+    lc->net_info.sin_family = AF_INET;
+    lc->net_info.sin_addr.s_addr = INADDR_ANY;
+    lc->net_info.sin_port = htons( port );
+
+    //Bind
+	if( bind(lc->sock_fd, (struct sockaddr *)&lc->net_info , sizeof(lc->net_info)) < 0){
+		puts("bind failed");
+		return 0;
+	}
+	puts("bind done");
+
+    if (listen(lc->sock_fd,AWAIT_CONN_QUEUE_LEN)){
+        puts("listen failed");
+    }
+
+    return 1;
+}
+
+// awaits a new connection on listener, blocking, returns established conn pntr
+Conn *accept_conn(Conn *lc, Conn_pool *conn_pool){
+    
+    Conn *client = get_free_conn(conn_pool);
+
+    while(1){
+        client->sock_fd = accept(lc->sock_fd, (struct sockaddr *)&client->net_info, &SOCKADDER_IN_LEN);
+        if(client->sock_fd == SOCK_FD_ERR){
+            puts("Connection failed");
+            disconnect_conn(client);
+            continue;
+        }
+        break;
+    }
+
+    return client;
 }

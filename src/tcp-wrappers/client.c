@@ -7,62 +7,52 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-// runtime of server client connection from perspective of client
-void client_server_main(Conn *c){
 
-    send_message(c,"this is a very lengthy test to see what happens for messages larger than 255 characters, will there be an overflow, who the heck knows but by golly i am going to find out once i am done rambling to fill space in this ungodly long string that i am currently typing out. ");
-    send_message(c,"test");
-    
-    while(sock_to_in_buffer(c,0)){
 
-        // TODO: deal with conjoined packets
-        pthread_mutex_lock(&stdout_mutex);
-        printf("inbound: %s\n",c->in_buffer);
-        pthread_mutex_unlock(&stdout_mutex);
+struct _Client_thread_args{
+    void (*client_server_main_pntr)(Conn *,void *);
+    Conn *c;
+    void *client_server_main_args;
+};
+typedef struct _Client_thread_args _Client_thread_args;
 
-    }
+void *_outgoing_conn_thread_target(void *client_thread_args_void){
+    _Client_thread_args *client_thread_args = (_Client_thread_args *)client_thread_args_void;
 
+    Conn *c = (Conn *)(client_thread_args->c);
+
+    // calls server_client_main, passed by user of network library
+    (*(client_thread_args->client_server_main_pntr))(c, client_thread_args->client_server_main_args);
+
+    puts("disconnecting socket");
+    disconnect_conn(c);
+    free(client_thread_args);
+    c->thread_id = 0;
+    return NULL;
 }
-
 
 /////////////////////////////////////////
 // client connection establishing code //
 /////////////////////////////////////////
-void *outgoing_conn_listener_thread(void *conn_void){
-    Conn *c = (Conn *)conn_void;
 
-    client_server_main(c);
-
-    puts("disconnecting socket");
-    disconnect(c);
-    return NULL;
-}
-
-pthread_t connect_to_peer(Conn_pool *conn_pool, char *ip, int port){
+pthread_t connect_to_peer(Conn_pool *conn_pool, char *ip, int port, void (*client_server_main_pntr)(Conn *, void *), void *client_server_main_args){
 	Conn *c = get_free_conn(conn_pool);
 
-	c->sock_fd = socket(AF_INET , SOCK_STREAM , 0);
-
-	if (c->sock_fd == -1){
-		printf("Could not create socket");
-        return -1;
-	}
-
-	c->net_info.sin_addr.s_addr = inet_addr(ip);
-	c->net_info.sin_family = AF_INET;
-	c->net_info.sin_port = htons( port );
-
 	//Connect to remote server
-	if (connect(c->sock_fd , (struct sockaddr *)&c->net_info , sizeof(c->net_info)) < 0){
-		puts("connect error");
-		return -1;
-	}
+    if(!connect_conn(c, ip, port)){
+        puts("Connect error");
+        return -1;
+    }
 
 	puts("Connected\n");
 
-    // TODO: handshake
+    // arguments to pass to thread
+    _Client_thread_args *client_thread_args = malloc(sizeof(_Client_thread_args));
+    client_thread_args->c = c;
+    client_thread_args->client_server_main_pntr = client_server_main_pntr;
+    client_thread_args->client_server_main_args = client_server_main_args;
 
-    if( pthread_create(&c->thread_id , NULL , outgoing_conn_listener_thread , (void *)c) < 0 ){
+    if( pthread_create(&c->thread_id , NULL , _outgoing_conn_thread_target , client_thread_args) < 0 ){
 		perror("could not create thread");
 		return -1;
 	}

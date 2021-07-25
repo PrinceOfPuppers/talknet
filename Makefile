@@ -20,7 +20,7 @@ SUBMAKE = #lib/clog lib/rpi-sense-hat-api
 # switched to debug if debug recipe is used
 SUBMAKE_RECIPE = 
 
-all: compile run
+all: debug run
 
 makeLibs:
 	for dir in $(SUBMAKE); do \
@@ -43,7 +43,6 @@ compile: makeLibs
 	$(CC) $(CFLAGS) $(FILES) $(LIB) $(INC) -o $(BUILD)/$(PROGRAM)
 
 debug: CFLAGS += -g
-debug: SUBMAKE_RECIPE = debug
 debug: compile
 
 run:

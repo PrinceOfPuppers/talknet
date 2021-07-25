@@ -5,6 +5,4 @@
 
 #define LISTEN_PORT 8234
 
-#define AWAIT_CONN_QUEUE_LEN 3
-
-int start_server(void (*server_client_main)(Conn *, void *), void *server_client_main_args);
+int await_connections(Conn_pool *conn_pool, void (*server_client_main_pntr)(Conn *, void *), void *server_client_main_args);

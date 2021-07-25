@@ -4,4 +4,4 @@
 
 // Client is for making outgoing connections to a peer
 // returns listener thread id
-pthread_t connect_to_peer(Conn_pool *conn_pool, char *ip, int port);
+pthread_t connect_to_peer(Conn_pool *conn_pool, char *ip, int port, void (*client_server_main_pntr)(Conn *, void *), void *client_server_main_args);
