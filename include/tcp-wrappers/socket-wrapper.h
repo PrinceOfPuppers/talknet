@@ -6,19 +6,14 @@
 #include "rsa.h"
 
 
-#define OUT_BUFF_SIZE 500
-// header currently consists of: 2 bytes for message size
-#define HEADER_SIZE 2
+#define OUT_BUFF_SIZE 2002
 
-#define IN_BUFF_SIZE 498 // must be able to contain: OUT_BUFF_SIZE - HEADER_SIZE
+
+#define IN_BUFF_SIZE 2000 // must be able to contain: OUT_BUFF_SIZE - HEADER_SIZE
 
 // number of connections waiting in listener queue before additional ones get refuesd
 #define AWAIT_CONN_QUEUE_LEN 3
 
-// conn->sock_fd numbers indicating special states
-#define SOCK_FD_ERR      -1 // err indicated by functions such as socket, accept and listen
-#define SOCK_FD_FREE     -1 // no connection, free to use  (must remain match SOCK_FD_ERR)
-#define SOCK_FD_RESERVED -2 // no connection, but reserved (must be less than -1)
 
 struct Conn{
     int sock_fd;
@@ -42,6 +37,7 @@ void disconnect_conn(Conn *c);
 void free_conn_buffers(Conn *c);
 
 int send_message(Conn *c, char *message);
+int send_messages(Conn *c, int argc, ...);
 int sock_to_in_buffer(Conn *c, int blocking);
 
 // TODO: temp function, stdout_mutex must be initalized

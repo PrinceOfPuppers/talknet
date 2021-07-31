@@ -88,7 +88,8 @@ RSA *get_keypair(char *path){
 
     }
     FILE *public_FP = fopen(publicPath,"rt");
-    RSA *rsa = PEM_read_RSAPublicKey(public_FP,NULL,NULL,NULL);
+    RSA *rsa = RSA_new();
+    rsa = PEM_read_RSAPublicKey(public_FP,NULL,NULL,NULL);
 
 
     FILE *private_FP = fopen(privatePath,"rt");
@@ -100,15 +101,30 @@ RSA *get_keypair(char *path){
     
     free(privatePath);
     free(publicPath);
+    CRYPTO_cleanup_all_ex_data();
     return rsa;
 }
 
 RSA *get_public_key_rsa(char *public_key){
-    
+    //RSA* rsa = RSA_new();
+    //BIO *bio = BIO_new_mem_buf(public_key, strlen(public_key));
+    //BIO_printf(bio,"%s\n");
+    //PEM_read_RSAPublicKey(bio, &rsa, 0, 0);
+    //puts("here");
+    //if(!rsa){
+    //    puts("rsa is null");
+    //}
+//
+    //BIO_free_all(bio);
+//
+    //return rsa;
     BIO *bio = BIO_new(BIO_s_mem());
     BIO_puts(bio, public_key);
     
     RSA *rsa = PEM_read_bio_RSA_PUBKEY(bio, 0, 0, 0);
+    if(!rsa){
+        puts("rsa is null");
+    }
 
     BIO_free_all(bio);
     return rsa;

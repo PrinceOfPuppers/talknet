@@ -11,6 +11,14 @@ pthread_mutex_t stdout_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 socklen_t SOCKADDER_IN_LEN = sizeof(struct sockaddr_in);
 
+// header currently consists of: 2 bytes for message size
+#define HEADER_SIZE 2 // (cant be changed without changing types)
+
+// conn->sock_fd numbers indicating special states
+#define SOCK_FD_ERR      -1 // err indicated by functions such as socket, accept and listen
+#define SOCK_FD_FREE     -1 // no connection, free to use  (must remain match SOCK_FD_ERR)
+#define SOCK_FD_RESERVED -2 // no connection, but reserved (must be less than -1)
+
 // simply initalizes conn with buffers
 void init_conn(Conn *c){
     // sock_fd is also used as an indicator if the connection is live and a thread is running
@@ -93,8 +101,52 @@ int send_message(Conn *c, char *message){
 		puts("Send failed");
 		return 0;
 	}
+    printf("len %i\n",len);
 
-	puts("Data Send\n");
+	puts("Data Sent");
+    return 1;
+}
+
+int send_messages(Conn *c, int argc, ...){
+    uint16_t len = 0;
+    uint16_t message_len = 0;
+
+    // we first write the messages, then the len last
+    char *buff_pntr = c->out_buffer + 2;
+
+    char *message;
+
+    va_list messages;
+    va_start(messages,argc);
+
+    for (int i = 0; i < argc; i++){
+        
+        message = va_arg(messages,char *);
+        message_len = (uint16_t)strlen(message);
+        printf("message_len %i\n",message_len);
+        if ( len + message_len > (OUT_BUFF_SIZE - HEADER_SIZE)){
+            puts("Message too large to send");
+		    return 0; 
+        }
+
+        strncpy(buff_pntr,message,message_len);
+        buff_pntr += message_len;
+        len += message_len;
+    }
+    printf("len %i\n",len);
+    va_end(messages);
+
+    // write len to first 2 bytes
+    c->out_buffer[1] = (len >> 8) & 0xFF;
+    c->out_buffer[0] = len & 0xFF;
+
+	if( send(c->sock_fd, c->out_buffer , len + 2, 0) < 0)
+	{
+		puts("Send failed");
+		return 0;
+	}
+
+	puts("Data Sent");
     return 1;
 }
 
@@ -138,7 +190,7 @@ int sock_to_in_buffer(Conn *c, int blocking){
 	}
 
     // null terminate in buffer
-    c->in_buffer[recv_size+1] = '\0';
+    c->in_buffer[recv_size] = '\0';
 	puts("Reply received\n");
     return 1;
 }
